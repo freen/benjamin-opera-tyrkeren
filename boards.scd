@@ -7,8 +7,6 @@
 
 // TODO:
 // - Instrument sets will support per-mic instruments, e.g. var instrument_sets
-// - (Piano) Examples include synth release strategy
-// - (Piano) Research FreeSelfWhenDone, UGen done-actions
 // - Instruments which should play continuous notes, e.g. clarinet?
 
 (
@@ -70,7 +68,6 @@ s.waitForBoot{
         // Piano
         {
 			2.do {
-				var son;
 				var out = 0;
 				var amp = 0.5;
 				var rho = 1;
@@ -78,16 +75,21 @@ s.waitForBoot{
 				var gate = 1;
 				var env = EnvGen.ar(
 					Env.asr(0,1, 0.1),
-					gate
+					gate,
+					doneAction: 2
 				);
-				FreeSelfWhenDone.kr(env);
-				son = OteyPianoStrings.ar(freq, amp, rho:rho) * env;
+				var son = OteyPianoStrings.ar(freq, amp, rho:rho) * env;
+				var fullMixEnv = EnvGen.ar(
+					Env.perc(0.005, 5, 1),
+					doneAction: 2
+				);
+				var fullMix = Pan2.ar(
+					son * 1,
+					LinLin.kr(freq, 36.midicps, 90.midicps, -0.75, 0.75)
+				) * fullMixEnv;
 				Out.ar(
 					out,
-					Pan2.ar(
-						son * 1,
-						LinLin.kr(freq, 36.midicps, 90.midicps, -0.75, 0.75)
-					)
+					fullMix
 				);
 			};
         }
@@ -103,7 +105,7 @@ s.waitForBoot{
 		    Out.ar(0,audio);
 	}).add;
 
-	Synth.tail(1,\piano_soundboard);
+	Synth.tail(1, \piano_soundboard);
 
     ~w = Window("threshold setting", Rect(15, 100, 300, 150))
         .onClose_({
