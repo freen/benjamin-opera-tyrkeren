@@ -3,6 +3,7 @@
 // https://docs.google.com/document/d/1AdY8mYTAHoDBee3Zoc3bZJsfBM3h2q00d9FHBes0HoY/edit
 
 // TODO:
+// - (Bell) Synth release
 // - Instrument sets will support per-mic instruments, e.g. var instrument_sets
 // - (Piano) Examples include synth release strategy
 // - (Piano) Research FreeSelfWhenDone, UGen done-actions
@@ -37,14 +38,27 @@ s.waitForBoot{
 
     var instruments = [
         // Bells
-		// FIXME: This plays just once
         {
-			Routine({
-				var dur = 0.2.exprand(3.0),
-				    a, b;
-				a = Synth(\risset, [\t_trig, 1, \freq, current_pitch_set.choose, \dur, dur]);
-				b = Synth(\risset, [\t_trig, 1, \freq, current_pitch_set.choose, \dur, dur]);
-			}).play;
+			var sugs = [];
+			2.do{
+				var amp = 0.1;
+				var t_trig = 1;
+				var freq = current_pitch_set.choose;
+				var dur = 0.2.exprand(3.0);
+				var amps = #[1, 0.67, 1, 1.8, 2.67, 1.67, 1.46, 1.33, 1.33, 1, 1.33];
+				var durs = #[1, 0.9, 0.65, 0.55, 0.325, 0.35, 0.25, 0.2, 0.15, 0.1, 0.075];
+				var frqs = #[0.56, 0.56, 0.92, 0.92, 1.19, 1.7, 2, 2.74, 3, 3.76, 4.07];
+				var dets = #[0, 1, 0, 1.7, 0, 0, 0, 0, 0, 0, 0];
+				var src = Mix.fill(11, {|i|
+					var env = EnvGen.ar(
+						Env.perc(0.005, dur * durs[i], amps[i], -4.5),
+						t_trig
+					);
+					SinOsc.ar(freq * frqs[i] + dets[i], 0, amp * env);
+				});
+				sugs = sugs.add(src);
+			};
+			Out.ar(0, Pan2.ar(Mix.new(sugs), 0));
         },
         // PIANO
         {
@@ -66,11 +80,27 @@ s.waitForBoot{
         var frqs= #[0.56, 0.56, 0.92, 0.92, 1.19, 1.7, 2, 2.74, 3, 3.76, 4.07];
         var dets= #[0, 1, 0, 1.7, 0, 0, 0, 0, 0, 0, 0];
         var src= Mix.fill(11, {|i|
-            var env = EnvGen.ar(Env.perc(0.005, dur*durs[i], amps[i], -4.5), t_trig);
+            var env = EnvGen.ar(
+				Env.perc(0.005, dur*durs[i], amps[i], -4.5),
+				t_trig
+			);
             SinOsc.ar(freq*frqs[i]+dets[i], 0, amp*env);
         });
         Out.ar(out, Pan2.ar(src, pan));
     }).add;
+
+	SynthDef(\help_oteypianostring, { |out=0, freq=440,gate=1, amp=0.5,rho=1|
+		    var son = OteyPianoStrings.ar(freq, amp, rho:rho)*EnvGen.ar(Env.asr(0,1,0.1),gate,doneAction:2);
+		    Out.ar(out, Pan2.ar(son * 1, LinLin.kr(freq,36.midicps,90.midicps,-0.75,0.75)));
+	}).add;
+
+	SynthDef(\piano_soundboard,{
+		    var audio = In.ar([20, 21], 2);
+		    audio = OteySoundBoard.ar(audio);
+		    Out.ar(0,audio);
+	}).add;
+
+	Synth.tail(1,\piano_soundboard);
 
     // Q: Should we always choose two DIFFERENT random notes from set,
     //    or possibly two SAME random notes from set, at one time?
@@ -131,32 +161,8 @@ s.waitForBoot{
 
     ~oscTrigResp = OSCFunc({ |msg|
         if(current_instrument.isNil or: { current_instrument.isPlaying.not }) {
-
             current_instrument.play;
-
-            /* current_instrument = {
-                var note_1 = OteyPianoStrings.ar(bells_notes_set.choose),
-                   note_2 = OteyPianoStrings.ar(bells_notes_set.choose);
-                note_1 = RLPF.ar(note_1) * 0.5;
-                note_2 = RLPF.ar(note_2) * 0.5;
-                note_1 + note_2;
-            }.play;*/
-
-            /*current_instrument = Routine({
-                var dur = 0.2.exprand(3.0);
-                var a, b;
-                1.do{
-                    a = Synth(\risset, [\t_trig, 1, \freq, current_pitch_set.choose, \dur, dur]);
-                    b = Synth(\risset, [\t_trig, 1, \freq, current_pitch_set.choose, \dur, dur]);
-                    dur.wait;
-                };
-                a.free;
-                b.free;
-            }).play;*/
-
-        } {
-            current_instrument.stop;
-        };
+        }
     }, '/amptrig', s.addr);
 
 }
