@@ -2,6 +2,9 @@
 // http://www.electronics.dit.ie/staff/tscarff/Music_technology/midi/midi_note_numbers_for_octaves.htm
 // https://docs.google.com/document/d/1AdY8mYTAHoDBee3Zoc3bZJsfBM3h2q00d9FHBes0HoY/edit
 
+// Q: Should we always choose two DIFFERENT random notes from set,
+//    or possibly two SAME random notes from set, at one time?
+
 // TODO:
 // - Instrument sets will support per-mic instruments, e.g. var instrument_sets
 // - (Piano) Examples include synth release strategy
@@ -38,6 +41,7 @@ s.waitForBoot{
     var instruments = [
         // Bells
         {
+			var out = 0;
 			var sugs = [];
 			2.do{
 				var amp = 0.1;
@@ -59,26 +63,36 @@ s.waitForBoot{
 				});
 				sugs = sugs.add(src);
 			};
-			Out.ar(0, Pan2.ar(Mix.new(sugs), 0));
+			Out.ar(out, Pan2.ar(Mix.new(sugs), 0));
         },
         // Piano
         {
-            var note_1 = OteyPianoStrings.ar(current_pitch_set.choose),
-                note_2 = OteyPianoStrings.ar(current_pitch_set.choose);
-            note_1 = RLPF.ar(note_1) * 0.5;
-            note_2 = RLPF.ar(note_2) * 0.5;
-            note_1 + note_2;
+			2.do {
+				var out = 0;
+				var amp = 0.5;
+				var rho = 1;
+				var freq = current_pitch_set.choose;
+				var gate = 1;
+				var env = EnvGen.ar(
+					Env.asr(0,1, 0.1),
+					gate,
+					doneAction: 2
+				);
+				var son = OteyPianoStrings.ar(freq, amp, rho:rho) * env;
+				Out.ar(
+					out,
+					Pan2.ar(
+						son * 1,
+						LinLin.kr(freq, 36.midicps, 90.midicps, -0.75, 0.75)
+					)
+				);
+			};
         }
     ];
 
     var current_pitch_set = pitch_sets[0];
 
     var current_instrument = instruments[0];
-
-	SynthDef(\help_oteypianostring, { |out=0, freq=440,gate=1, amp=0.5,rho=1|
-		    var son = OteyPianoStrings.ar(freq, amp, rho:rho)*EnvGen.ar(Env.asr(0,1,0.1),gate,doneAction:2);
-		    Out.ar(out, Pan2.ar(son * 1, LinLin.kr(freq,36.midicps,90.midicps,-0.75,0.75)));
-	}).add;
 
 	SynthDef(\piano_soundboard,{
 		    var audio = In.ar([20, 21], 2);
@@ -87,9 +101,6 @@ s.waitForBoot{
 	}).add;
 
 	Synth.tail(1,\piano_soundboard);
-
-    // Q: Should we always choose two DIFFERENT random notes from set,
-    //    or possibly two SAME random notes from set, at one time?
 
     ~w = Window("threshold setting", Rect(15, 100, 300, 150))
         .onClose_({
