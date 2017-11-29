@@ -2,11 +2,11 @@
 // http://www.electronics.dit.ie/staff/tscarff/Music_technology/midi/midi_note_numbers_for_octaves.htm
 // https://docs.google.com/document/d/1AdY8mYTAHoDBee3Zoc3bZJsfBM3h2q00d9FHBes0HoY/edit
 
-// TODO: Risset bell plays just once
-// TODO: Instrument sets will support per-mic instruments, e.g. var instrument_sets
-// TODO: (Piano) Examples include synth release strategy
-// TODO: (Piano) Research FreeSelfWhenDone, UGen done-actions
-
+// TODO:
+// - Instrument sets will support per-mic instruments, e.g. var instrument_sets
+// - (Piano) Examples include synth release strategy
+// - (Piano) Research FreeSelfWhenDone, UGen done-actions
+// - Instruments which should play continuous notes, e.g. clarinet?
 
 (
 s.waitForBoot{
