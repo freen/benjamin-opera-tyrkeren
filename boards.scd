@@ -55,19 +55,22 @@ s.waitForBoot{
 				var src = Mix.fill(11, {|i|
 					var env = EnvGen.ar(
 						Env.perc(0.005, dur * durs[i], amps[i], -4.5),
-						t_trig,
-						doneAction: 2
+						t_trig
 					);
-					FreeSelfWhenDone.kr(env);
 					SinOsc.ar(freq * frqs[i] + dets[i], 0, amp * env);
 				});
-				sugs = sugs.add(src);
+				var fullBellEnv = EnvGen.ar(
+					Env.perc(0.005, 1, 1, -4),
+					doneAction: 2
+				);
+				sugs = sugs.add(src * fullBellEnv);
 			};
 			Out.ar(out, Pan2.ar(Mix.new(sugs), 0));
         },
         // Piano
         {
 			2.do {
+				var son;
 				var out = 0;
 				var amp = 0.5;
 				var rho = 1;
@@ -75,10 +78,10 @@ s.waitForBoot{
 				var gate = 1;
 				var env = EnvGen.ar(
 					Env.asr(0,1, 0.1),
-					gate,
-					doneAction: 2
+					gate
 				);
-				var son = OteyPianoStrings.ar(freq, amp, rho:rho) * env;
+				FreeSelfWhenDone.kr(env);
+				son = OteyPianoStrings.ar(freq, amp, rho:rho) * env;
 				Out.ar(
 					out,
 					Pan2.ar(
