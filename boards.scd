@@ -9,7 +9,31 @@
 // - Instrument sets will support per-mic instruments, e.g. var instrument_sets
 // - Instruments which should play continuous notes, e.g. clarinet?
 
+// If "address already in use"
+Server.killAll;
+
+var s,
+    sixtyFourMb = 65536,
+    inDeviceName = "DUO-CAPTURE EX 44.1kHz",
+    outDeviceName = "Built-in Output";
+// outDeviceName = "Soundcraft Signature 12 MTK",
+// busBoard1 = 4,
+// busBoard2 = 5,
+// busBoard3 = 6,
+// busBoard4 = 8,
+// board1, board2, board3, board4;
+
+s = Server.local;
+s.options.memSize_(sixtyFourMb * 8);
+s.options.inDevice_(inDeviceName);
+s.options.outDevice_(outDeviceName);
+s.options.numInputBusChannels_(2);
+s.options.numOutputBusChannels_(2);
+// s.options.numInputBusChannels_(14);
+// s.options.numOutputBusChannels_(12);
+
 (
+
 s.waitForBoot{
 
     // Order of sets must match order of position in pitch set menu.
