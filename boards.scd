@@ -12,27 +12,18 @@
 // If "address already in use"
 Server.killAll;
 
-var s,
-    sixtyFourMb = 65536,
-    inDeviceName = "DUO-CAPTURE EX 44.1kHz",
-    outDeviceName = "Built-in Output";
-// outDeviceName = "Soundcraft Signature 12 MTK",
-// busBoard1 = 4,
-// busBoard2 = 5,
-// busBoard3 = 6,
-// busBoard4 = 8,
-// board1, board2, board3, board4;
+(
+
+Server.quitAll;
 
 s = Server.local;
-s.options.memSize_(sixtyFourMb * 8);
-s.options.inDevice_(inDeviceName);
-s.options.outDevice_(outDeviceName);
+s.options.memSize_(65536 * 8); // 64 MB * 8
+s.options.inDevice_("DUO-CAPTURE EX 44.1kHz");
+s.options.outDevice_("Built-in Output");
 s.options.numInputBusChannels_(2);
 s.options.numOutputBusChannels_(2);
-// s.options.numInputBusChannels_(14);
-// s.options.numOutputBusChannels_(12);
 
-(
+s.reboot;
 
 s.waitForBoot{
 
@@ -154,16 +145,18 @@ s.waitForBoot{
 	SynthDef(\piano_soundboard,{
 		    var audio = In.ar([20, 21], 2);
 		    audio = OteySoundBoard.ar(audio);
-		    Out.ar(0,audio);
+		    Out.ar(0, audio);
 	}).add;
 
-	SynthDef(\ampSynth, { |inbus, thresh = 0.8, decay = 1|
-		var amp = Amplitude.kr(In.ar(inbus, 1), attackTime: 0.01, releaseTime: decay);
+	SynthDef(\ampSynth, { |input_channel, thresh = 0.8, decay = 1|
+		var ampPath = "/amp%".format(input_channel).asSymbol;
+		var amptrigPath = "/amptrig%".format(input_channel).asSymbol;
+		var amp = Amplitude.kr(In.ar(input_channel, 1), attackTime: 0.01, releaseTime: decay);
 		//var amp = Amplitude.kr(SoundIn.ar(inbus), attackTime: 0.01, releaseTime: decay);
 		// this trigger (id==0) is to update the gui only
-		SendReply.kr(Impulse.kr(10), '/amp', amp);
+		SendReply.kr(Impulse.kr(10), ampPath, amp);
 		// this trigger gets sent only when amplitude crosses threshold
-		SendReply.kr(amp >= thresh, '/amptrig');
+		SendReply.kr(amp >= thresh, amptrigPath);
 	}).add;
 
 	Synth.tail(1, \piano_soundboard);
@@ -196,6 +189,15 @@ s.waitForBoot{
 
 	~input_channels.do({ arg input_channel, i;
 
+		var ampPath = "/amp%".format(input_channel).asSymbol;
+		var amptrigPath = "/amptrig%".format(input_channel).asSymbol;
+
+		"----------------------------------------------".postln;
+		"Creating GUI set for input channel % (index %)".format(input_channel, i).postln;
+		"----------------------------------------------".postln;
+		"ampPath: %".format(ampPath).postln;
+		"amptrigPath: %".format(amptrigPath).postln;
+
 		~ampView = EZSlider(~w, 295@20, "amplitude", \amp, labelWidth: 80, numberWidth: 60);
 		~ampView.sliderView.canFocus_(false).enabled_(false);
 		~ampView.numberView.canFocus_(false).enabled_(false);
@@ -222,7 +224,7 @@ s.waitForBoot{
 
 		~ampUpdater = OSCFunc({ |msg|
 			defer { ~ampViews[i].value = msg[3] }
-		}, '/amp', s.addr);
+		}, ampPath, s.addr);
 
 		~ampUpdaters = ~ampUpdaters.add(~ampUpdater);
 
@@ -231,9 +233,9 @@ s.waitForBoot{
 			if(~current_instrument.isNil or: { ~current_instrument.isPlaying.not }) {
 				~current_instrument.play;
 			}
-		}, '/amptrig', s.addr);
+		}, amptrigPath, s.addr);
 
-		~oscTrigResponses.add(~oscTrigResp);
+		~oscTrigResponses = ~oscTrigResponses.add(~oscTrigResp);
 
 		StaticText(~w, 295@5).background_(Color.gray);
 
