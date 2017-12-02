@@ -157,9 +157,18 @@ s.waitForBoot{
 		    Out.ar(0,audio);
 	}).add;
 
+	SynthDef(\ampSynth, { |inbus, thresh = 0.8, decay = 1|
+		var amp = Amplitude.kr(In.ar(inbus, 1), attackTime: 0.01, releaseTime: decay);
+		//var amp = Amplitude.kr(SoundIn.ar(inbus), attackTime: 0.01, releaseTime: decay);
+		// this trigger (id==0) is to update the gui only
+		SendReply.kr(Impulse.kr(10), '/amp', amp);
+		// this trigger gets sent only when amplitude crosses threshold
+		SendReply.kr(amp >= thresh, '/amptrig');
+	}).add;
+
 	Synth.tail(1, \piano_soundboard);
 
-    ~w = Window("threshold setting", Rect(15, 100, 300, 150))
+    ~w = Window("threshold setting", Rect(15, 100, 300, 300))
         .onClose_({
             ~ampSynth.free;
             ~ampUpdater.free;
@@ -191,46 +200,40 @@ s.waitForBoot{
 		~ampView.sliderView.canFocus_(false).enabled_(false);
 		~ampView.numberView.canFocus_(false).enabled_(false);
 
-		~ampViews.add(~ampView);
+		~ampViews = ~ampViews.add(~ampView);
 
 		StaticText(~w, 295@5).background_(Color.gray);
 
-/*		~threshView = EZSlider(~w, 295@30, "threshold", \amp, action: { |ez|
+		~threshView = EZSlider(~w, 295@30, "threshold", \amp, action: { |ez|
 			~ampSynths[i].set(\thresh, ez.value);
 		}, initVal: 0.4, labelWidth: 80, numberWidth: 60);
 
-		~threshViews.add(~threshView);*/
+		~threshViews = ~threshViews.add(~threshView);
 
-		/*~ampSynth = SynthDef(\ampSynth, { |inbus, thresh = 0.8, decay = 1|
-			var amp = Amplitude.kr(SoundIn.ar(inbus), attackTime: 0.01, releaseTime: decay);
-			// this trigger (id==0) is to update the gui only
-			SendReply.kr(Impulse.kr(10), '/amp', amp);
-			// this trigger gets sent only when amplitude crosses threshold
-			SendReply.kr(amp >= thresh, '/amptrig');
-		}).play(args: [inbus: input_channel, thresh: ~threshViews[i].value, decay: ~decayViews[i].value]);
+		~ampSynth = Synth.new(\ampSynth, [inbus: input_channel, thresh: ~threshViews[i].value, decay: ~decayViews[i].value]);
 
-		~ampSynths.add(~ampSynth);*/
+		~ampSynths = ~ampSynths.add(~ampSynth);
 
-/*		~decayView = EZSlider(~w, 295@30, "decay", #[0.1, 100, \exp], action: { |ez|
+		~decayView = EZSlider(~w, 295@30, "decay", #[0.1, 100, \exp], action: { |ez|
 			~ampSynths[i].set(\decay, ez.value);
 		}, initVal: 80.0, labelWidth: 80, numberWidth: 60);
 
-		~decayViews.add(~decayView);*/
+		~decayViews = ~decayViews.add(~decayView);
 
-/*		~ampUpdater = OSCFunc({ |msg|
+		~ampUpdater = OSCFunc({ |msg|
 			defer { ~ampViews[i].value = msg[3] }
 		}, '/amp', s.addr);
 
-		~ampUpdaters.add(~ampUpdater);*/
+		~ampUpdaters = ~ampUpdaters.add(~ampUpdater);
 
-/*		~oscTrigResp = OSCFunc({ |msg|
+		~oscTrigResp = OSCFunc({ |msg|
 			~current_instrument = ~current_instrument_set[i];
 			if(~current_instrument.isNil or: { ~current_instrument.isPlaying.not }) {
 				~current_instrument.play;
 			}
 		}, '/amptrig', s.addr);
 
-		~oscTrigResponses.add(~oscTrigResp);*/
+		~oscTrigResponses.add(~oscTrigResp);
 
 		StaticText(~w, 295@5).background_(Color.gray);
 
