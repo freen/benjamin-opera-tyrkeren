@@ -156,10 +156,9 @@ s.waitForBoot{
 
     ~w = Window("threshold setting", Rect(15, 100, 300, 300))
         .onClose_({
-            ~ampSynth.free;
+		    ~ampSynths.do({ arg ampSynth, i; ampSynth.free; });
             ~ampUpdater.free;
             ~oscTrigResp.free;
-            ~current_instrument.stop;
         });
 
     ~w.view.decorator = FlowLayout(~w.view.bounds, 2@2, 2@2);
@@ -211,13 +210,16 @@ s.waitForBoot{
 	});
 
 	~ampUpdater = OSCFunc({ |msg|
-		"ampUpdater: %".format(msg).postln;
-		defer { ~ampViews[msg[2]].value = msg[3] }
+		// "ampUpdater: %".format(msg).postln;
+		defer {
+			~ampViews[msg[2]].value = msg[3]
+		}
 	}, '/amp', s.addr);
 
 	~oscTrigResp = OSCFunc({ |msg|
-		"oscTrigResp: %".format(msg).postln;
-		~current_instrument = ~current_instrument_set[msg[2]];
+		var input_channel = msg[2];
+		"Received oscTrigResp on channel %: %".format(input_channel, msg).postln;
+		~current_instrument = ~current_instrument_set[input_channel];
 		~current_instrument.play;
 	}, '/amptrig', s.addr);
 
