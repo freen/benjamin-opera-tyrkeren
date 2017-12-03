@@ -3,7 +3,7 @@
 // https://docs.google.com/document/d/1AdY8mYTAHoDBee3Zoc3bZJsfBM3h2q00d9FHBes0HoY/edit
 
 // Q: Should we always choose two DIFFERENT random notes from set,
-//    or possibly two SAME random notes from set, at one time?
+//	or possibly two SAME random notes from set, at one time?
 
 // TODO:
 // - Instrument sets will support per-mic instruments, e.g. var instrument_sets
@@ -27,29 +27,29 @@ s.reboot;
 
 s.waitForBoot{
 
-    // Order of sets must match order of position in pitch set menu.
+	// Order of sets must match order of position in pitch set menu.
 
-    ~pitch_sets = [
-        // Bells Set 1
-        [
-            131.41, // C
-            156.27, // D
-            662.25, // E
-            884,    // A
-            992.3,  // B
-            1314.1, // E
-            1445.5  // F#
-        ],
-        // Bells Set 2 (dummy data)
-        [
-            1234,
-            23.41,
-            341.2,
-            41.23
-        ]
-    ];
+	~pitch_sets = [
+		// Bells Set 1
+		[
+			131.41, // C
+			156.27, // D
+			662.25, // E
+			884,	// A
+			992.3,  // B
+			1314.1, // E
+			1445.5  // F#
+		],
+		// Bells Set 2 (dummy data)
+		[
+			1234,
+			23.41,
+			341.2,
+			41.23
+		]
+	];
 
-    ~bell = {
+	~bell = {
 		var out = 0;
 		var sugs = [];
 		2.do{
@@ -77,7 +77,7 @@ s.waitForBoot{
 		Out.ar(out, Pan2.ar(Mix.new(sugs), 0));
 	};
 
-    ~piano = {
+	~piano = {
 		2.do {
 			var out = 0;
 			var amp = 0.5;
@@ -129,19 +129,19 @@ s.waitForBoot{
 		[~piano, ~bell]
 	];
 
-    ~current_pitch_set = ~pitch_sets[0];
+	~current_pitch_set = ~pitch_sets[0];
 
-    ~current_instrument_set = ~instrument_sets[0];
+	~current_instrument_set = ~instrument_sets[0];
 
 	~ampViews = [];
-    ~decayViews = [];
+	~decayViews = [];
 	~threshViews = [];
 	~ampSynths = [];
 
 	SynthDef(\piano_soundboard,{
-		    var audio = In.ar([20, 21], 2);
-		    audio = OteySoundBoard.ar(audio);
-		    Out.ar(0, audio);
+			var audio = In.ar([20, 21], 2);
+			audio = OteySoundBoard.ar(audio);
+			Out.ar(0, audio);
 	}).add;
 
 	SynthDef(\ampSynth, { |input_channel, thresh = 0.8, decay = 1|
@@ -154,30 +154,30 @@ s.waitForBoot{
 
 	Synth.tail(1, \piano_soundboard);
 
-    ~w = Window("threshold setting", Rect(15, 100, 300, 300))
-        .onClose_({
-		    ~ampSynths.do({ arg ampSynth, i; ampSynth.free; });
-            ~ampUpdater.free;
-            ~oscTrigResp.free;
-        });
+	~w = Window("threshold setting", Rect(15, 100, 300, 300))
+		.onClose_({
+			~ampSynths.do({ arg ampSynth, i; ampSynth.free; });
+			~ampUpdater.free;
+			~oscTrigResp.free;
+		});
 
-    ~w.view.decorator = FlowLayout(~w.view.bounds, 2@2, 2@2);
+	~w.view.decorator = FlowLayout(~w.view.bounds, 2@2, 2@2);
 
-    ~pitch_set_menu = PopUpMenu(~w, Rect(10, 10, 90, 20));
-    ~pitch_set_menu.items_(["Bells 1", "Bells 2"]);
-    ~pitch_set_menu.action = { arg menu;
-        ~current_pitch_set = ~pitch_sets[menu.value];
-        ("New pitch set for " + menu.item + ":").postln;
-        ~current_pitch_set.postln;
-    };
+	~pitch_set_menu = PopUpMenu(~w, Rect(10, 10, 90, 20));
+	~pitch_set_menu.items_(["Bells 1", "Bells 2"]);
+	~pitch_set_menu.action = { arg menu;
+		~current_pitch_set = ~pitch_sets[menu.value];
+		("New pitch set for " + menu.item + ":").postln;
+		~current_pitch_set.postln;
+	};
 
-    ~instrument_set_menu = PopUpMenu(~w, Rect(10, 10, 90, 20));
-    ~instrument_set_menu.items_(["Bell", "Piano"]);
-    ~instrument_set_menu.action = { arg menu;
-        ~current_instrument_set = ~instrument_sets[menu.value];
-        ("New instrument set for " + menu.item + ":").postln;
-        ~current_instrument_set.postln;
-    };
+	~instrument_set_menu = PopUpMenu(~w, Rect(10, 10, 90, 20));
+	~instrument_set_menu.items_(["Bell", "Piano"]);
+	~instrument_set_menu.action = { arg menu;
+		~current_instrument_set = ~instrument_sets[menu.value];
+		("New instrument set for " + menu.item + ":").postln;
+		~current_instrument_set.postln;
+	};
 
 	~input_channels.do({ arg input_channel, i;
 
@@ -223,6 +223,6 @@ s.waitForBoot{
 		~current_instrument.play;
 	}, '/amptrig', s.addr);
 
-    ~w.front;
+	~w.front;
 }
 );
