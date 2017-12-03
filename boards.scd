@@ -139,8 +139,6 @@ s.waitForBoot{
     ~decayViews = [];
 	~threshViews = [];
 	~ampSynths = [];
-	~ampUpdaters = [];
-	~oscTrigResponses = [];
 
 	SynthDef(\piano_soundboard,{
 		    var audio = In.ar([20, 21], 2);
@@ -149,14 +147,11 @@ s.waitForBoot{
 	}).add;
 
 	SynthDef(\ampSynth, { |input_channel, thresh = 0.8, decay = 1|
-		var ampPath = "/amp%".format(input_channel).asSymbol;
-		var amptrigPath = "/amptrig%".format(input_channel).asSymbol;
-		var amp = Amplitude.kr(In.ar(input_channel, 1), attackTime: 0.01, releaseTime: decay);
-		//var amp = Amplitude.kr(SoundIn.ar(inbus), attackTime: 0.01, releaseTime: decay);
+		var amp = Amplitude.kr(SoundIn.ar(input_channel), attackTime: 0.01, releaseTime: decay);
 		// this trigger (id==0) is to update the gui only
-		SendReply.kr(Impulse.kr(10), ampPath, amp);
+		SendReply.kr(Impulse.kr(10), '/amp', amp, input_channel);
 		// this trigger gets sent only when amplitude crosses threshold
-		SendReply.kr(amp >= thresh, amptrigPath);
+		SendReply.kr(amp >= thresh, '/amptrig', replyID: input_channel);
 	}).add;
 
 	Synth.tail(1, \piano_soundboard);
@@ -189,15 +184,6 @@ s.waitForBoot{
 
 	~input_channels.do({ arg input_channel, i;
 
-		var ampPath = "/amp%".format(input_channel).asSymbol;
-		var amptrigPath = "/amptrig%".format(input_channel).asSymbol;
-
-		"----------------------------------------------".postln;
-		"Creating GUI set for input channel % (index %)".format(input_channel, i).postln;
-		"----------------------------------------------".postln;
-		"ampPath: %".format(ampPath).postln;
-		"amptrigPath: %".format(amptrigPath).postln;
-
 		~ampView = EZSlider(~w, 295@20, "amplitude", \amp, labelWidth: 80, numberWidth: 60);
 		~ampView.sliderView.canFocus_(false).enabled_(false);
 		~ampView.numberView.canFocus_(false).enabled_(false);
@@ -212,7 +198,7 @@ s.waitForBoot{
 
 		~threshViews = ~threshViews.add(~threshView);
 
-		~ampSynth = Synth.new(\ampSynth, [inbus: input_channel, thresh: ~threshViews[i].value, decay: ~decayViews[i].value]);
+		~ampSynth = Synth.new(\ampSynth, [input_channel: input_channel, thresh: ~threshViews[i].value, decay: ~decayViews[i].value]);
 
 		~ampSynths = ~ampSynths.add(~ampSynth);
 
@@ -222,26 +208,23 @@ s.waitForBoot{
 
 		~decayViews = ~decayViews.add(~decayView);
 
-		~ampUpdater = OSCFunc({ |msg|
-			defer { ~ampViews[i].value = msg[3] }
-		}, ampPath, s.addr);
-
-		~ampUpdaters = ~ampUpdaters.add(~ampUpdater);
-
-		~oscTrigResp = OSCFunc({ |msg|
-			~current_instrument = ~current_instrument_set[i];
-			if(~current_instrument.isNil or: { ~current_instrument.isPlaying.not }) {
-				~current_instrument.play;
-			}
-		}, amptrigPath, s.addr);
-
-		~oscTrigResponses = ~oscTrigResponses.add(~oscTrigResp);
-
 		StaticText(~w, 295@5).background_(Color.gray);
 
 	});
 
-    ~w.front;
+	~ampUpdater = OSCFunc({ |msg|
+		"ampUpdater: %".format(msg).postln;
+		defer { ~ampViews[msg[2]].value = msg[3] }
+	}, '/amp', s.addr);
 
+	~oscTrigResp = OSCFunc({ |msg|
+		"oscTrigResp: %".format(msg).postln;
+		~current_instrument = ~current_instrument_set[msg[2]];
+		if(~current_instrument.isNil or: { ~current_instrument.isPlaying.not }) {
+			~current_instrument.play;
+		}
+	}, '/amptrig', s.addr);
+
+    ~w.front;
 }
 );
