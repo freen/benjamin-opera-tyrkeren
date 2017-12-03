@@ -107,14 +107,12 @@ s.waitForBoot{
 
 	~wave = {
 		var gate = 1;
-		Out.ar(
-			0,
-			EnvGen.ar(
-				Env.asr(0, 1, 0.1),
-				gate,
-				doneAction: 2
-			) * SinOsc.ar()
+		var env = EnvGen.ar(
+			Env.perc(0.005, 1, 0.1),
+			doneAction: 2
 		);
+		var sug = SinOsc.ar();
+		Out.ar(0, sug * env);
 	};
 
 	// NOTE: Order of instrument_sets must match position of items in instrument sets menu.
@@ -194,7 +192,7 @@ s.waitForBoot{
 
 		~threshView = EZSlider(~w, 295@30, "threshold", \amp, action: { |ez|
 			~ampSynths[i].set(\thresh, ez.value);
-		}, initVal: 0.4, labelWidth: 80, numberWidth: 60);
+		}, initVal: 0.1, labelWidth: 80, numberWidth: 60);
 
 		~threshViews = ~threshViews.add(~threshView);
 
@@ -204,7 +202,7 @@ s.waitForBoot{
 
 		~decayView = EZSlider(~w, 295@30, "decay", #[0.1, 100, \exp], action: { |ez|
 			~ampSynths[i].set(\decay, ez.value);
-		}, initVal: 80.0, labelWidth: 80, numberWidth: 60);
+		}, initVal: 2.5, labelWidth: 80, numberWidth: 60);
 
 		~decayViews = ~decayViews.add(~decayView);
 
@@ -220,9 +218,7 @@ s.waitForBoot{
 	~oscTrigResp = OSCFunc({ |msg|
 		"oscTrigResp: %".format(msg).postln;
 		~current_instrument = ~current_instrument_set[msg[2]];
-		if(~current_instrument.isNil or: { ~current_instrument.isPlaying.not }) {
-			~current_instrument.play;
-		}
+		~current_instrument.play;
 	}, '/amptrig', s.addr);
 
     ~w.front;
