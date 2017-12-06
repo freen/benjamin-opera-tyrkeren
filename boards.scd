@@ -19,9 +19,11 @@ Server.quitAll;
 s = Server.local;
 s.options.memSize_(65536 * 8); // 64 MB * 8
 // s.options.inDevice_("DUO-CAPTURE EX 44.1kHz")
-s.options.inDevice_("Soundcraft Signature 12 MTK");
+// s.options.inDevice_("Soundcraft Signature 12 MTK");
+s.options.inDevice_("Built-in Microph");
 s.options.outDevice_("Built-in Output");
-s.options.numInputBusChannels_(14);
+// s.options.numInputBusChannels_(14);
+s.options.numInputBusChannels_(2);
 s.options.numOutputBusChannels_(2);
 
 s.reboot;
@@ -31,26 +33,70 @@ s.waitForBoot{
 	// Order of sets must match order of position in pitch set menu.
 
 	~pitch_sets = [
-		// Bells Set 1
+		// Set 1: Bells
 		[
-			131.41, // C
-			156.27, // D
-			662.25, // E
-			884,	// A
-			992.3,  // B
-			1314.1, // E
-			1445.5  // F#
+			65.7,
+			73.75,
+			82.7,
+			92.9,
+			110.5,
+			124.0,
+			131.41,
+			147.5,
+			165.5,
+			185.8,
+			221,
+			248,
+			242.8,
+			295,
+			331.1,
+			371.6,
+			442,
+			496.1,
+			590,
+			662.25,
+			743.3,
+			884,
+			992.2
 		],
-		// Bells Set 2 (dummy data)
+		// Set 2: Bells
 		[
-			1234,
-			23.41,
-			341.2,
-			41.23
+			78.1, 87.7, 98.4, 131.4, 147.5, 156.7, 175.4, 196.8, 262.8, 295, 312.5, 350.8, 394.7, 525.6, 590,
+			701.6, 787.5, 1051.25, 1180
+		],
+		// Set 3
+		[
+		],
+		// Set 4
+		[
+		],
+		// Set 5
+		[
+		],
+		// Set 6
+		[
+		],
+		// Set 7
+		[
+		],
+		// Set 8
+		[
+		],
+		// Set 9
+		[
+		],
+		// Set 10
+		[
+		],
+		// Set 11
+		[
+		],
+		// Set 12
+		[
 		]
 	];
 
-	~bell = {
+	~risset_bell = {
 		var out = 0;
 		var sugs = [];
 		2.do{
@@ -76,6 +122,22 @@ s.waitForBoot{
 			sugs = sugs.add(src * fullBellEnv);
 		};
 		Out.ar(out, Pan2.ar(Mix.new(sugs), 0));
+	};
+
+	~prayer_bell = {
+		2.do {
+			var gate = 1;
+			var env = EnvGen.ar(
+				Env.perc(0.005, 1, 0.1),
+				doneAction: 2
+			);
+			var sug = Synth.new(\prayer_bell, [
+				\freq, ~current_pitch_set.choose,
+				\lag, 3,
+				\i_doneAction, 2
+			]) * 0.5;
+			Out.ar(0, sug * env);
+		};
 	};
 
 	~piano = {
@@ -130,21 +192,29 @@ s.waitForBoot{
 
 	~input_channels = [
 		0,
-		1,
-		2,
-		3
+		// 1,
+		// 2,
+		// 3
+	];
+
+	~output_channels = [
+		0,
+		// 5,
+		// 6,
+		// 7
 	];
 
 	// Indices of instruments in instrument sets map to indices of input_channels
 	~instrument_sets = [
 		[
-			~bell,
-			~bell,
-			~bell,
-			~bell
+			~prayer_bell,
+			~prayer_bell,
+			~prayer_bell,
+			~prayer_bell
 		],
 		[
-			~bell,
+			~risset_bell,
+
 			~wave,
 			~piano,
 			~saw
@@ -157,7 +227,7 @@ s.waitForBoot{
 		],
 		[
 			~piano,
-			~bell,
+			~risset_bell,
 			~wave,
 			~saw
 		],
@@ -171,6 +241,75 @@ s.waitForBoot{
 	~decayViews = [];
 	~threshViews = [];
 	~ampSynths = [];
+
+	SynthDef(\prayer_bell, { |outbus, t_trig = 1, sing_switch = 0, freq = 2434, amp = 0.5, decayscale = 1, lag = 10, i_doneAction = 0|
+		var fullEnv, sig, input, first, freqscale, mallet, sing;
+		freqscale = freq / 2434;
+		freqscale = Lag3.kr(freqscale, lag);
+		decayscale = Lag3.kr(decayscale, lag);
+
+		mallet = LPF.ar(Trig.ar(t_trig, SampleDur.ir)!2, 10000 * freqscale);
+		sing = LPF.ar(
+		LPF.ar(
+			{
+			PinkNoise.ar * Integrator.kr(sing_switch * 0.001, 0.999).linexp(0, 1, 0.01, 1) * amp
+			} ! 2,
+			2434 * freqscale
+		) + Dust.ar(0.1), 10000 * freqscale
+		) * LFNoise1.kr(0.5).range(-45, -30).dbamp;
+		input = mallet + (sing_switch.clip(0, 1) * sing);
+
+
+		sig = DynKlank.ar(`[
+		[
+			(first = LFNoise1.kr(0.5).range(2424, 2444)) + Line.kr(20, 0, 0.5),
+			first + LFNoise1.kr(0.5).range(1,3),
+			LFNoise1.kr(1.5).range(5435, 5440) - Line.kr(35, 0, 1),
+			LFNoise1.kr(1.5).range(5480, 5485) - Line.kr(10, 0, 0.5),
+			LFNoise1.kr(2).range(8435, 8445) + Line.kr(15, 0, 0.05),
+			LFNoise1.kr(2).range(8665, 8670),
+			LFNoise1.kr(2).range(8704, 8709),
+			LFNoise1.kr(2).range(8807, 8817),
+			LFNoise1.kr(2).range(9570, 9607),
+			LFNoise1.kr(2).range(10567, 10572) - Line.kr(20, 0, 0.05),
+			LFNoise1.kr(2).range(10627, 10636) + Line.kr(35, 0, 0.05),
+			LFNoise1.kr(2).range(14689, 14697) - Line.kr(10, 0, 0.05)
+		],
+		[
+			LFNoise1.kr(1).range(-10, -5).dbamp,
+			LFNoise1.kr(1).range(-20, -10).dbamp,
+			LFNoise1.kr(1).range(-12, -6).dbamp,
+			LFNoise1.kr(1).range(-12, -6).dbamp,
+			-20.dbamp,
+			-20.dbamp,
+			-20.dbamp,
+			-25.dbamp,
+			-10.dbamp,
+			-20.dbamp,
+			-20.dbamp,
+			-25.dbamp
+		],
+		[
+			20 * freqscale.pow(0.2),
+			20 * freqscale.pow(0.2),
+			5,
+			5,
+			0.6,
+			0.5,
+			0.3,
+			0.25,
+			0.4,
+			0.5,
+			0.4,
+			0.6
+		] * freqscale.reciprocal.pow(0.5)
+		], input, freqscale, 0, decayscale);
+		DetectSilence.ar(sig, doneAction: i_doneAction);
+
+		fullEnv = EnvGen.ar(Env.asr(releaseTime: 5), doneAction: 2);
+
+		Out.ar(outbus, sig * fullEnv);
+	}).add;
 
 	SynthDef(\piano_soundboard,{
 			var audio = In.ar([20, 21], 2);
@@ -211,7 +350,7 @@ s.waitForBoot{
 	~instrument_set_menu = PopUpMenu(~w, Rect(10, 10, 90, 20));
 	~instrument_set_menu.items_(
 		[
-			"Bell",
+			"Prayer Bells",
 			"Piano",
 			"3",
 			"4"
