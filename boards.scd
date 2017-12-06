@@ -19,11 +19,11 @@ Server.quitAll;
 s = Server.local;
 s.options.memSize_(65536 * 8); // 64 MB * 8
 // s.options.inDevice_("DUO-CAPTURE EX 44.1kHz")
-// s.options.inDevice_("Soundcraft Signature 12 MTK");
-s.options.inDevice_("Built-in Microph");
+s.options.inDevice_("Soundcraft Signature 12 MTK");
+// s.options.inDevice_("Built-in Microph");
 s.options.outDevice_("Built-in Output");
-// s.options.numInputBusChannels_(14);
-s.options.numInputBusChannels_(2);
+s.options.numInputBusChannels_(14);
+// s.options.numInputBusChannels_(2);
 s.options.numOutputBusChannels_(2);
 
 s.reboot;
@@ -247,7 +247,7 @@ s.waitForBoot{
 		Out.ar(0, sig * env);
 	};
 
-	// TODO env not closing
+	// TODO env not closing, .
 	~strings = {
 		var env, in, delay, f1, f2, sug;
 		var out = 0, freq = ~current_pitch_set.choose, amp=0.1, gate=1, pan=1, freqLag=0;
@@ -269,9 +269,9 @@ s.waitForBoot{
 
 	~input_channels = [
 		0,
-		// 1,
-		// 2,
-		// 3
+		1,
+		2,
+		3
 	];
 
 	~output_channels = [
