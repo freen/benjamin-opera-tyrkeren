@@ -18,9 +18,10 @@ Server.quitAll;
 
 s = Server.local;
 s.options.memSize_(65536 * 8); // 64 MB * 8
-s.options.inDevice_("DUO-CAPTURE EX 44.1kHz");
+// s.options.inDevice_("DUO-CAPTURE EX 44.1kHz")
+s.options.inDevice_("Soundcraft Signature 12 MTK");
 s.options.outDevice_("Built-in Output");
-s.options.numInputBusChannels_(2);
+s.options.numInputBusChannels_(14);
 s.options.numOutputBusChannels_(2);
 
 s.reboot;
@@ -115,18 +116,51 @@ s.waitForBoot{
 		Out.ar(0, sug * env);
 	};
 
+	~saw = {
+		var gate = 1;
+		var env = EnvGen.ar(
+			Env.perc(0.005, 1, 0.1),
+			doneAction: 2
+		);
+		var sug = Saw.ar();
+		Out.ar(0, sug * env);
+	};
+
 	// NOTE: Order of instrument_sets must match position of items in instrument sets menu.
 
 	~input_channels = [
 		0,
-		1
+		1,
+		2,
+		3
 	];
 
 	// Indices of instruments in instrument sets map to indices of input_channels
 	~instrument_sets = [
-		[~piano, ~wave],
-		[~bell, ~wave],
-		[~piano, ~bell]
+		[
+			~bell,
+			~bell,
+			~bell,
+			~bell
+		],
+		[
+			~bell,
+			~wave,
+			~piano,
+			~saw
+		],
+		[
+			~piano,
+			~piano,
+			~piano,
+			~piano
+		],
+		[
+			~piano,
+			~bell,
+			~wave,
+			~saw
+		],
 	];
 
 	~current_pitch_set = ~pitch_sets[0];
@@ -146,15 +180,13 @@ s.waitForBoot{
 
 	SynthDef(\ampSynth, { |input_channel, thresh = 0.8, decay = 1|
 		var amp = Amplitude.kr(SoundIn.ar(input_channel), attackTime: 0.01, releaseTime: decay);
-		// this trigger (id==0) is to update the gui only
 		SendReply.kr(Impulse.kr(10), '/amp', amp, input_channel);
-		// this trigger gets sent only when amplitude crosses threshold
 		SendReply.kr(amp >= thresh, '/amptrig', replyID: input_channel);
 	}).add;
 
 	Synth.tail(1, \piano_soundboard);
 
-	~w = Window("threshold setting", Rect(15, 100, 300, 300))
+	~w = Window("BENJAMIN OPERA TYRKEREN", Rect(15, 100, 300, 440))
 		.onClose_({
 			~ampSynths.do({ arg ampSynth, i; ampSynth.free; });
 			~ampUpdater.free;
@@ -164,7 +196,12 @@ s.waitForBoot{
 	~w.view.decorator = FlowLayout(~w.view.bounds, 2@2, 2@2);
 
 	~pitch_set_menu = PopUpMenu(~w, Rect(10, 10, 90, 20));
-	~pitch_set_menu.items_(["Bells 1", "Bells 2"]);
+	~pitch_set_menu.items_(
+		[
+			"Bells 1",
+			"Bells 2"
+		]
+	);
 	~pitch_set_menu.action = { arg menu;
 		~current_pitch_set = ~pitch_sets[menu.value];
 		("New pitch set for " + menu.item + ":").postln;
@@ -172,7 +209,14 @@ s.waitForBoot{
 	};
 
 	~instrument_set_menu = PopUpMenu(~w, Rect(10, 10, 90, 20));
-	~instrument_set_menu.items_(["Bell", "Piano"]);
+	~instrument_set_menu.items_(
+		[
+			"Bell",
+			"Piano",
+			"3",
+			"4"
+		]
+	);
 	~instrument_set_menu.action = { arg menu;
 		~current_instrument_set = ~instrument_sets[menu.value];
 		("New instrument set for " + menu.item + ":").postln;
@@ -180,6 +224,8 @@ s.waitForBoot{
 	};
 
 	~input_channels.do({ arg input_channel, i;
+
+		"Input Channel %: Building GUI and amp / thresh synths".format(input_channel).postln;
 
 		~ampView = EZSlider(~w, 295@20, "amplitude", \amp, labelWidth: 80, numberWidth: 60);
 		~ampView.sliderView.canFocus_(false).enabled_(false);
@@ -210,7 +256,7 @@ s.waitForBoot{
 	});
 
 	~ampUpdater = OSCFunc({ |msg|
-		// "ampUpdater: %".format(msg).postln;
+		"ampUpdater: %".format(msg).postln;
 		defer {
 			~ampViews[msg[2]].value = msg[3]
 		}
