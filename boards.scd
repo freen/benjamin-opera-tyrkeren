@@ -88,7 +88,7 @@ s.waitForBoot{
 		],
 		// Set 7
 		[
-			248, 964 // B
+			248, 964, // B
 			331, 662, // E
 			701, 1403, // F
 			963, 1873 // Bb
@@ -128,7 +128,7 @@ s.waitForBoot{
 	~risset_bell = {
 		var out = 0;
 		var sugs = [];
-		2.do{
+		1.do{
 			var amp = 0.1;
 			var t_trig = 1;
 			var freq = ~current_pitch_set.choose;
@@ -154,7 +154,7 @@ s.waitForBoot{
 	};
 
 	~prayer_bell = {
-		2.do {
+		1.do {
 			var gate = 1;
 			var env = EnvGen.ar(
 				Env.perc(0.005, 1, 0.1),
@@ -197,24 +197,72 @@ s.waitForBoot{
 		};
 	};
 
-	~wave = {
+	~snare = {
 		var gate = 1;
+		var sig = WhiteNoise.ar(120);
 		var env = EnvGen.ar(
 			Env.perc(0.005, 1, 0.1),
 			doneAction: 2
 		);
-		var sug = SinOsc.ar();
-		Out.ar(0, sug * env);
+
+		sig = FreqShift.ar(sig, 900);
+		sig = RHPF.ar(sig, 900);
+		sig = LeakDC.ar(sig);
+
+		sig = Compander.ar(sig, sig,
+			thresh: 0.1,
+			slopeBelow: 10,
+			slopeAbove: 1,
+			clampTime: 0.01,
+			relaxTime: 0.01
+		);
+
+		Out.ar(0, sig * env);
 	};
 
-	~saw = {
-		var gate = 1;
-		var env = EnvGen.ar(
+	~wavy_xmission = {
+		var sig, env;
+		sig = SinOsc.ar([300, 500, 800, 1000]);
+		sig = FreeVerb.ar(sig, room:0.8) * 5;
+		sig = DelayN.ar(sig, 0.048);
+		sig = Compander.ar(sig, sig,
+			thresh: 0.013,
+			slopeBelow: 10,
+			slopeAbove: 1,
+			clampTime: 0.01,
+			relaxTime: 0.01
+		);
+		sig = DelayN.ar(sig, 0.048);
+		sig = BPF.ar(sig);
+
+		sig = MoogFF.ar(
+			sig,
+			SinOsc.kr(LFNoise0.kr(0.42).range(0.001, 2.2)).range(30, 4200),
+			0.83 * 4
+		);
+		env = EnvGen.ar(
 			Env.perc(0.005, 1, 0.1),
 			doneAction: 2
 		);
-		var sug = Saw.ar();
-		Out.ar(0, sug * env);
+		Out.ar(0, sig * env);
+	};
+
+	// TODO env not closing
+	~strings = {
+		var env, in, delay, f1, f2, sug;
+		var out = 0, freq = ~current_pitch_set.choose, amp=0.1, gate=1, pan=1, freqLag=0;
+		f1 = freq.lag(freqLag);
+		f2 = freq.lag(freqLag * 0.5);
+		delay = 0.25 / f2;
+		env = Env.asr(0, 1, 0.3);
+		in = WhiteNoise.ar(180);
+		in = CombL.ar(in, delay, delay, 1);
+		in = Resonz.ar(in, f1, 0.001).abs;
+		in = in * EnvGen.kr(env, gate, doneAction:2);
+		sug = Pan2.ar(in, pan, amp) * EnvGen.ar(
+			Env.asr(releaseTime: 4), doneAction: 2
+		);
+		Out.ar(out, sug);
 	};
 
 	// NOTE: Order of instrument_sets must match position of items in instrument sets menu.
@@ -242,24 +290,17 @@ s.waitForBoot{
 			~prayer_bell
 		],
 		[
-			~risset_bell,
-
-			~wave,
-			~piano,
-			~saw
-		],
-		[
 			~piano,
 			~piano,
 			~piano,
 			~piano
 		],
 		[
-			~piano,
-			~risset_bell,
-			~wave,
-			~saw
-		],
+			~wavy_xmission,
+			~snare,
+			~snare,
+			~wavy_xmission
+		]
 	];
 
 	~current_pitch_set = ~pitch_sets[0];
@@ -287,7 +328,6 @@ s.waitForBoot{
 		) + Dust.ar(0.1), 10000 * freqscale
 		) * LFNoise1.kr(0.5).range(-45, -30).dbamp;
 		input = mallet + (sing_switch.clip(0, 1) * sing);
-
 
 		sig = DynKlank.ar(`[
 		[
@@ -333,6 +373,7 @@ s.waitForBoot{
 			0.6
 		] * freqscale.reciprocal.pow(0.5)
 		], input, freqscale, 0, decayscale);
+
 		DetectSilence.ar(sig, doneAction: i_doneAction);
 
 		fullEnv = EnvGen.ar(Env.asr(releaseTime: 5), doneAction: 2);
@@ -341,15 +382,25 @@ s.waitForBoot{
 	}).add;
 
 	SynthDef(\piano_soundboard,{
-			var audio = In.ar([20, 21], 2);
-			audio = OteySoundBoard.ar(audio);
-			Out.ar(0, audio);
+		var audio = In.ar([20, 21], 2);
+		audio = OteySoundBoard.ar(audio);
+		Out.ar(0, audio);
 	}).add;
 
 	SynthDef(\ampSynth, { |input_channel, thresh = 0.8, decay = 1|
 		var amp = Amplitude.kr(SoundIn.ar(input_channel), attackTime: 0.01, releaseTime: decay);
 		SendReply.kr(Impulse.kr(10), '/amp', amp, input_channel);
 		SendReply.kr(amp >= thresh, '/amptrig', replyID: input_channel);
+	}).add;
+
+	SynthDef(\sax, { |out, freq=440, amp=0.1, gate=1|
+		var num = 16;
+		var harms = Array.series(num, 1, 1) * Array.exprand(num, 0.995, 1.001);
+		var snd = SinOsc.ar(freq * SinOsc.kr(Rand(2.0,5.0),0,Rand(0.001, 0.01),1) * harms, mul:Array.geom(num, 1, 0.63));
+		snd = Splay.ar(snd);
+		snd = BBandPass.ar(snd, freq * XLine.kr(0.1,4,0.01), 2);
+		snd = snd * amp * EnvGen.ar(Env.adsr(0.001, 0.2, 0.7, 0.2), gate, doneAction:2);
+		Out.ar(out, snd!2);
 	}).add;
 
 	Synth.tail(1, \piano_soundboard);
@@ -366,8 +417,19 @@ s.waitForBoot{
 	~pitch_set_menu = PopUpMenu(~w, Rect(10, 10, 90, 20));
 	~pitch_set_menu.items_(
 		[
-			"Bells 1",
-			"Bells 2"
+			"Set 1: Bells",
+			"Set 2: Bells",
+			"Set 3",
+			"Set 4",
+			"Set 5",
+			"Set 6",
+			"Set 7",
+			"Set 8",
+			"Set 9",
+			"Set 10",
+			"Set 11",
+			"Set 12",
+			"Set 13"
 		]
 	);
 	~pitch_set_menu.action = { arg menu;
@@ -379,10 +441,9 @@ s.waitForBoot{
 	~instrument_set_menu = PopUpMenu(~w, Rect(10, 10, 90, 20));
 	~instrument_set_menu.items_(
 		[
-			"Prayer Bells",
-			"Piano",
-			"3",
-			"4"
+			"Bells, Bells, Bells, Bells",
+			"Piano, Piano, Piano, Piano",
+			"Pitchless, ..."
 		]
 	);
 	~instrument_set_menu.action = { arg menu;
