@@ -333,6 +333,7 @@ s.waitForBoot{
 
 	// Indices of instruments in instrument sets map to indices of input_channels
 	~instrument_sets = [
+		[{}, {}, {}, {}], // "Muted"
 		[
 			~prayer_bell,
 			~prayer_bell,
@@ -497,7 +498,6 @@ s.waitForBoot{
 	~pitch_set_menu = PopUpMenu(~w, Rect(10, 10, 90, 20));
 	~pitch_set_menu.items_(
 		[
-			"Muted",
 			"Set 1: Bells",
 			"Set 2: Bells",
 			"Set 3",
@@ -522,6 +522,7 @@ s.waitForBoot{
 	~instrument_set_menu = PopUpMenu(~w, Rect(10, 10, 90, 20));
 	~instrument_set_menu.items_(
 		[
+			"MUTED",
 			"Bells, Bells, Bells, Bells",
 			"Piano, Piano, Piano, Piano",
 			"Strings, Bells, Piano, Piano",
