@@ -14,9 +14,12 @@ Server.killAll;
 
 (
 
-~thresholdInitValue = 0.02;
-~decayInitValue = 0.33; // Soundcraft
-// ~decayInitValue = 100; // Built-in Microph
+~thresholdInitValue = 0.02; // Soundcraft
+~decayInitValue = 0.33;     // Soundcraft
+
+~thresholdInitValue = 0.12; // Built-in Microph
+~decayInitValue = 100;      // Built-in Microph
+
 ~prayerBellAmp = 0.1;
 ~outputChannel = 0;
 
