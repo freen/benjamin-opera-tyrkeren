@@ -27,17 +27,21 @@ Server.quitAll;
 
 s = Server.local;
 s.options.memSize_(65536 * 8); // 64 MB * 8
-// s.options.inDevice_("DUO-CAPTURE EX 44.1kHz")
+
+
+// SOUNDCRAFT
+
 // s.options.inDevice_("Soundcraft Signature 12 MTK");
-// s.options.inDevice_("iPhone");
-// s.options.inDevice_("Built-in Microph");
-s.options.inDevice_("Aggregate Device");
 // s.options.outDevice_("Soundcraft Signature 12 MTK");
+// s.options.numInputBusChannels_(14);
+// s.options.numOutputBusChannels_(12);
+
+// TESTING / BUILTIN
+
+s.options.inDevice_("Built-in Microph");
 s.options.outDevice_("Built-in Output");
-s.options.numInputBusChannels_(14);
-s.options.numOutputBusChannels_(12);
-// s.options.numInputBusChannels_(2);
-// s.options.numOutputBusChannels_(2);
+s.options.numInputBusChannels_(2);
+s.options.numOutputBusChannels_(2);
 
 s.reboot;
 
@@ -168,11 +172,6 @@ s.waitForBoot{
 
 	~prayer_bell = {
 		1.do {
-			var gate = 1;
-			var env = EnvGen.ar(
-				Env.perc(0.005, 1, 0.1),
-				doneAction: 2
-			);
 			var sug = Synth.new(\prayer_bell, [
 				\freq, ~current_pitch_set.choose,
 				\lag, 3,
@@ -208,7 +207,7 @@ s.waitForBoot{
 				fullMix
 			);
 		};
-	}.play;
+	};
 
 	~deer_scare = {
 		var gate = 1;
@@ -344,7 +343,7 @@ s.waitForBoot{
 	~threshViews = [];
 	~ampSynths = [];
 
-	SynthDef(\prayer_bell, { |outbus, t_trig = 1, sing_switch = 0, freq = 2434, amp = 0.5, decayscale = 1, lag = 10, i_doneAction = 0|
+	SynthDef(\prayer_bell, { |outbus, t_trig = 1, sing_switch = 0, freq = 2434, amp = 0.01, decayscale = 1, lag = 10, i_doneAction = 0|
 		var fullEnv, sig, input, first, freqscale, mallet, sing;
 		freqscale = freq / 2434;
 		freqscale = Lag3.kr(freqscale, lag);
@@ -359,7 +358,7 @@ s.waitForBoot{
 			2434 * freqscale
 		) + Dust.ar(0.1), 10000 * freqscale
 		) * LFNoise1.kr(0.5).range(-45, -30).dbamp;
-		input = mallet + (sing_switch.clip(0, 1) * sing);
+		input = mallet + (sing_switch.clip(0, 1) * sing) * 0.08;
 
 		sig = DynKlank.ar(`[
 		[
