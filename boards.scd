@@ -67,7 +67,7 @@ s.reboot;
 
 s.waitForBoot{
 
-	var chorusBus = Bus.audio(s, 2);
+	// ~chorusBus = Bus.audio(s, 2);
 
 	// Order of sets must match order of position in pitch set menu.
 
@@ -460,29 +460,31 @@ s.waitForBoot{
 		Out.ar(out, snd!2);
 	}).add;
 
-	SynthDef(\chorus, { arg inbus=2, outbus=6, predelay=0.08, speed=0.05, depth=0.1, ph_diff=0.5;
-		var in, sig, modulators, numDelays = 12;
-		in = SoundIn.ar(inbus, 1) * numDelays.reciprocal;
-		// in = SoundIn.ar(inbus) * numDelays.reciprocal;
-		modulators = Array.fill(numDelays, {arg i;
-		LFPar.kr(speed * rrand(0.94, 1.06), ph_diff * i, depth, predelay);});
-		sig = DelayC.ar(in, 0.5, modulators, mul: 12);
-		sig = sig.sum;
-		sig = sig * 2;
-		Out.ar(outbus, sig ! 2); // output in stereo
-	}).add;
+	// SynthDef(\chorus, { arg inbus=2, outbus=6, predelay=0.08, speed=0.05, depth=0.1, ph_diff=0.5;
+	// 	var in, sig, modulators, numDelays = 12;
+	// 	in = SoundIn.ar(inbus, 1) * numDelays.reciprocal;
+	// 	// in = SoundIn.ar(inbus) * numDelays.reciprocal;
+	// 	modulators = Array.fill(numDelays, {arg i;
+	// 	LFPar.kr(speed * rrand(0.94, 1.06), ph_diff * i, depth, predelay);});
+	// 	sig = DelayC.ar(in, 0.5, modulators, mul: 12);
+	// 	sig = sig.sum;
+	// 	sig = sig * 2;
+	// 	Out.ar(outbus, sig ! 2); // output in stereo
+	// }).add;
 
 	// {
 		// Out.ar(6, SoundIn.ar(2))
 	// }.play(addAction:\addToHead);
 
-	// a = Synth(\chorus, [\outbus, ~outputChannel], addAction:\addToTail);
-	// a.set(\inbus, ~chorusBus);
-	// a.set(\predelay, 0.02);
-	// a.set(\speed, 0.22);
-	// a.set(\depth, 0.5);
-	// a.set(\pd_diff, 0.7);
-	// a.set(\predelay, 0.2);
+	// Synth(\chorus, [
+	// 	\inbus, ~chorusBus,
+	// 	\outbus, ~outputChannel,
+	// 	\predelay, 0.02,
+	// 	\speed, 0.22,
+	// 	\depth, 0.5,
+	// 	\pd_diff, 0.7,
+	// 	\predelay, 0.2
+	// ], addAction:\addToTail);
 
 	Synth.tail(1, \piano_soundboard);
 
@@ -509,8 +511,7 @@ s.waitForBoot{
 			"Set 9",
 			"Set 10",
 			"Set 11",
-			"Set 12",
-			"Set 13"
+			"Set 12"
 		]
 	);
 	~pitch_set_menu.action = { arg menu;
