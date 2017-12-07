@@ -27,20 +27,20 @@ Server.killAll;
 
 // TESTING / BUILT-IN
 
-~input_channels = [
-	0,
-	0,
-	0,
-	0
-];
+// ~input_channels = [
+// 	0,
+// 	0,
+// 	0,
+// 	0
+// ];
 
 ~thresholdInitValue = 0.02; // Soundcraft
 ~decayInitValue = 0.33;     // Soundcraft
 ~outputChannel = 5;         // Soundcraft
 
-~thresholdInitValue = 0.12; // Built-in Microph
-~decayInitValue = 100;      // Built-in Microph
-~outputChannel = 0;         // Built-in Microph
+// ~thresholdInitValue = 0.12; // Built-in Microph
+// ~decayInitValue = 100;      // Built-in Microph
+// ~outputChannel = 0;         // Built-in Microph
 
 ~prayerBellAmp = 0.06;
 
@@ -58,10 +58,10 @@ s.options.numOutputBusChannels_(12);
 
 // TESTING / BUILTIN
 
-s.options.inDevice_("Built-in Microph");
-s.options.outDevice_("Built-in Output");
-s.options.numInputBusChannels_(2);
-s.options.numOutputBusChannels_(2);
+// s.options.inDevice_("Built-in Microph");
+// s.options.outDevice_("Built-in Output");
+// s.options.numInputBusChannels_(2);
+// s.options.numOutputBusChannels_(2);
 
 s.reboot;
 
