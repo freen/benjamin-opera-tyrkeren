@@ -281,7 +281,7 @@ s.waitForBoot{
 		sig = RLPF.ar(sig, 120);
 		sig = PitchShift.ar(sig, pitchRatio: 2, pitchDispersion: 0.3);
 		sig = RHPF.ar(sig, 250);
-		sig = sig * 9;
+		sig = sig * 2;
 		sig = AllpassL.ar(sig);
 		Out.ar(~outputChannel, sig);
 	};
