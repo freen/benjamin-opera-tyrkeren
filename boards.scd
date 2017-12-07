@@ -290,11 +290,9 @@ s.waitForBoot{
 		],
 		[
 			~piano,
-			// ~strings,
+			~strings,
 			~piano,
-			~piano,
-			~piano
-			// ~strings
+			~strings
 		],
 		[
 			~wavy_xmission,
