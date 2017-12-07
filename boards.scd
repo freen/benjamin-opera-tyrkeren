@@ -14,7 +14,7 @@ Server.killAll;
 
 (
 
-~outputChannel = 2;
+~outputChannel = 0;
 
 Server.quitAll;
 
@@ -250,8 +250,6 @@ s.waitForBoot{
 		Out.ar(~outputChannel, sig * env);
 	};
 
-
-	// TODO env not closing, .
 	~strings = {
 		var env, in, delay, f1, f2, sug;
 		var out = 0, freq = ~current_pitch_set.choose, amp=0.1, gate=1, pan=1, freqLag=0;
@@ -264,7 +262,7 @@ s.waitForBoot{
 		in = Resonz.ar(in, f1, 0.001).abs;
 		in = in * EnvGen.kr(env, gate, doneAction:2);
 		sug = Pan2.ar(in, pan, amp) * EnvGen.ar(
-			Env.asr(releaseTime: 4), doneAction: 2
+			Env.perc(releaseTime: 4), doneAction: 2
 		);
 		Out.ar(~outputChannel, sug);
 	};
@@ -273,7 +271,7 @@ s.waitForBoot{
 
 	~input_channels = [
 		0,
-		1
+		// 1
 		// 2,
 		// 3
 	];
