@@ -42,7 +42,7 @@ Server.killAll;
 ~decayInitValue = 100;      // Built-in Microph
 ~outputChannel = 0;         // Built-in Microph
 
-~prayerBellAmp = 0.08;
+~prayerBellAmp = 0.06;
 
 Server.quitAll;
 
