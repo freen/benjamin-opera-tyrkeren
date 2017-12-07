@@ -14,16 +14,18 @@ Server.killAll;
 
 (
 
+~outputChannel = 2;
+
 Server.quitAll;
 
 s = Server.local;
 s.options.memSize_(65536 * 8); // 64 MB * 8
 // s.options.inDevice_("DUO-CAPTURE EX 44.1kHz")
-s.options.inDevice_("Soundcraft Signature 12 MTK");
-// s.options.inDevice_("Built-in Microph");
+// s.options.inDevice_("Soundcraft Signature 12 MTK");
+s.options.inDevice_("Built-in Microph");
 s.options.outDevice_("Built-in Output");
-s.options.numInputBusChannels_(14);
-// s.options.numInputBusChannels_(2);
+// s.options.numInputBusChannels_(14);
+s.options.numInputBusChannels_(2);
 s.options.numOutputBusChannels_(2);
 
 s.reboot;
@@ -163,15 +165,15 @@ s.waitForBoot{
 			var sug = Synth.new(\prayer_bell, [
 				\freq, ~current_pitch_set.choose,
 				\lag, 3,
-				\i_doneAction, 2
-			]) * 0.5;
-			Out.ar(0, sug * env);
+				\i_doneAction, 2,
+				\outbus, ~outputChannel
+			]);
+			Out.ar(~outputChannel, sug);
 		};
 	};
 
 	~piano = {
 		2.do {
-			var out = 0;
 			var amp = 0.5;
 			var rho = 1;
 			var freq = ~current_pitch_set.choose;
@@ -191,15 +193,16 @@ s.waitForBoot{
 				LinLin.kr(freq, 36.midicps, 90.midicps, -0.75, 0.75)
 			) * fullMixEnv;
 			Out.ar(
-				out,
+				~outputChannel,
 				fullMix
 			);
 		};
 	};
 
-	~snare = {
+	~deer_scare = {
 		var gate = 1;
-		var sig = WhiteNoise.ar(120);
+		var buf = Buffer.read(s, "/Users/freen/src/benjamin-opera-tyrkeren/a_rook_is_placed.wav");
+		var sig = PlayBuf.ar(2, buf, BufRateScale.kr(buf), doneAction: 2);
 		var env = EnvGen.ar(
 			Env.perc(0.005, 1, 0.1),
 			doneAction: 2
@@ -217,7 +220,7 @@ s.waitForBoot{
 			relaxTime: 0.01
 		);
 
-		Out.ar(0, sig * env);
+		Out.ar(~outputChannel, sig * env);
 	};
 
 	~wavy_xmission = {
@@ -244,8 +247,9 @@ s.waitForBoot{
 			Env.perc(0.005, 1, 0.1),
 			doneAction: 2
 		);
-		Out.ar(0, sig * env);
+		Out.ar(~outputChannel, sig * env);
 	};
+
 
 	// TODO env not closing, .
 	~strings = {
@@ -262,23 +266,16 @@ s.waitForBoot{
 		sug = Pan2.ar(in, pan, amp) * EnvGen.ar(
 			Env.asr(releaseTime: 4), doneAction: 2
 		);
-		Out.ar(out, sug);
+		Out.ar(~outputChannel, sug);
 	};
 
 	// NOTE: Order of instrument_sets must match position of items in instrument sets menu.
 
 	~input_channels = [
 		0,
-		1,
-		2,
-		3
-	];
-
-	~output_channels = [
-		0,
-		// 5,
-		// 6,
-		// 7
+		1
+		// 2,
+		// 3
 	];
 
 	// Indices of instruments in instrument sets map to indices of input_channels
@@ -296,10 +293,10 @@ s.waitForBoot{
 			~piano
 		],
 		[
+			~deer_scare,
 			~wavy_xmission,
-			~snare,
-			~snare,
-			~wavy_xmission
+			~wavy_xmission,
+			~deer_scare
 		]
 	];
 
@@ -384,7 +381,7 @@ s.waitForBoot{
 	SynthDef(\piano_soundboard,{
 		var audio = In.ar([20, 21], 2);
 		audio = OteySoundBoard.ar(audio);
-		Out.ar(0, audio);
+		Out.ar(~outputChannel, audio);
 	}).add;
 
 	SynthDef(\ampSynth, { |input_channel, thresh = 0.8, decay = 1|
@@ -402,6 +399,30 @@ s.waitForBoot{
 		snd = snd * amp * EnvGen.ar(Env.adsr(0.001, 0.2, 0.7, 0.2), gate, doneAction:2);
 		Out.ar(out, snd!2);
 	}).add;
+
+	// SynthDef(\chorus, { arg inbus=2, outbus=6, predelay=0.08, speed=0.05, depth=0.1, ph_diff=0.5;
+	// 	var in, sig, modulators, numDelays = 12;
+	// 	in = SoundIn.ar(inbus, 1) * numDelays.reciprocal;
+	//
+	// 	// in = SoundIn.ar(inbus) * numDelays.reciprocal;
+	// 	modulators = Array.fill(numDelays, {arg i;
+	// 	LFPar.kr(speed * rrand(0.94, 1.06), ph_diff * i, depth, predelay);});
+	// 	sig = DelayC.ar(in, 0.5, modulators, mul: 12);
+	// 	sig = sig.sum;
+	// 	sig = sig * 2;
+	// 	Out.ar(outbus, sig ! 2); // output in stereo
+	// }).add;
+	//
+	// {
+	// 	Out.ar(6, SoundIn.ar(2))
+	// }.play(addAction:\addToHead);
+	//
+	// a = Synth(\chorus, addAction:\addToTail);
+	// a.set(\predelay, 0.02);
+	// a.set(\speed, 0.22);
+	// a.set(\depth, 0.5);
+	// a.set(\pd_diff, 0.7);
+	// a.set(\predelay, 0.2);
 
 	Synth.tail(1, \piano_soundboard);
 
@@ -466,7 +487,7 @@ s.waitForBoot{
 
 		~threshView = EZSlider(~w, 295@30, "threshold", \amp, action: { |ez|
 			~ampSynths[i].set(\thresh, ez.value);
-		}, initVal: 0.1, labelWidth: 80, numberWidth: 60);
+		}, initVal: 0.04, labelWidth: 80, numberWidth: 60);
 
 		~threshViews = ~threshViews.add(~threshView);
 
@@ -476,7 +497,7 @@ s.waitForBoot{
 
 		~decayView = EZSlider(~w, 295@30, "decay", #[0.1, 100, \exp], action: { |ez|
 			~ampSynths[i].set(\decay, ez.value);
-		}, initVal: 2.5, labelWidth: 80, numberWidth: 60);
+		}, initVal: 80, labelWidth: 80, numberWidth: 60);
 
 		~decayViews = ~decayViews.add(~decayView);
 
