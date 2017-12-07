@@ -14,19 +14,20 @@ Server.killAll;
 
 (
 
-~outputChannel = 0;
+~outputChannel = 4;
 
 Server.quitAll;
 
 s = Server.local;
 s.options.memSize_(65536 * 8); // 64 MB * 8
 // s.options.inDevice_("DUO-CAPTURE EX 44.1kHz")
-// s.options.inDevice_("Soundcraft Signature 12 MTK");
-s.options.inDevice_("Built-in Microph");
+s.options.inDevice_("Soundcraft Signature 12 MTK");
+// s.options.inDevice_("Built-in Microph");
 s.options.outDevice_("Built-in Output");
-// s.options.numInputBusChannels_(14);
-s.options.numInputBusChannels_(2);
-s.options.numOutputBusChannels_(2);
+s.options.numInputBusChannels_(14);
+s.options.numOutputBusChannels_(12);
+// s.options.numInputBusChannels_(2);
+// s.options.numOutputBusChannels_(2);
 
 s.reboot;
 
