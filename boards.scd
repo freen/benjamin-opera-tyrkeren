@@ -184,7 +184,7 @@ s.waitForBoot{
 
 	~piano = {
 		2.do {
-			var amp = 0.5;
+			var amp = 0.08;
 			var rho = 1;
 			var freq = ~current_pitch_set.choose;
 			var gate = 1;
