@@ -15,18 +15,22 @@ Server.killAll;
 (
 
 ~thresholdInitValue = 0.02;
-~decayInitValue = 0.33;
-~outputChannel = 5;
+~decayInitValue = 0.33; // Soundcraft
+// ~decayInitValue = 100; // Built-in Microph
+~prayerBellAmp = 0.1;
+~outputChannel = 0;
 
 Server.quitAll;
 
 s = Server.local;
 s.options.memSize_(65536 * 8); // 64 MB * 8
 // s.options.inDevice_("DUO-CAPTURE EX 44.1kHz")
-s.options.inDevice_("Soundcraft Signature 12 MTK");
+// s.options.inDevice_("Soundcraft Signature 12 MTK");
+// s.options.inDevice_("iPhone");
 // s.options.inDevice_("Built-in Microph");
-s.options.outDevice_("Soundcraft Signature 12 MTK");
-// s.options.outDevice_("Built-in Output");
+s.options.inDevice_("Aggregate Device");
+// s.options.outDevice_("Soundcraft Signature 12 MTK");
+s.options.outDevice_("Built-in Output");
 s.options.numInputBusChannels_(14);
 s.options.numOutputBusChannels_(12);
 // s.options.numInputBusChannels_(2);
@@ -183,7 +187,7 @@ s.waitForBoot{
 			var freq = ~current_pitch_set.choose;
 			var gate = 1;
 			var env = EnvGen.ar(
-				Env.asr(0,1, 0.1),
+				Env.asr(0, 1, 0.1),
 				gate,
 				doneAction: 2
 			);
@@ -201,7 +205,7 @@ s.waitForBoot{
 				fullMix
 			);
 		};
-	};
+	}.play;
 
 	~deer_scare = {
 		var gate = 1;
@@ -254,6 +258,19 @@ s.waitForBoot{
 		Out.ar(~outputChannel, sig * env);
 	};
 
+	~doom = {
+		var in, compander, sig, killerEnv;
+		var predelay=0.048, combdecay=3.7, allpassdecay=0.11, revVol=0.21;
+		var buf = Buffer.read(s, "/Users/freen/src/benjamin-opera-tyrkeren/a_rook_is_placed.wav");
+		sig = PlayBuf.ar(2, buf, BufRateScale.kr(buf));
+		compander = 	Compander.ar(sig, sig, MouseX.kr(0.005, 1, 1), 10, 1, 0.01, 0.01);
+		z = DelayN.ar(compander, 0.1, predelay);
+		y = Mix.ar(Array.fill(7,{ CombL.ar(z, 0.05, rrand(0.03, 0.05), MouseY.kr(1,20, 1)) }));
+		6.do({ y = AllpassN.ar(y, 0.050, rrand(0.03, 0.05), allpassdecay) });
+		// y = RLPF.ar(y, 200);
+		killerEnv = EnvGen.ar(Env.perc(releaseTime: 9), doneAction: 2);
+		Out.ar(~outputChannel, y * killerEnv ! 2);
+	};
 
 	~time_shifter = {
 		var sig;
@@ -264,12 +281,12 @@ s.waitForBoot{
 		sig = RHPF.ar(sig, 250);
 		sig = sig * 9;
 		sig = AllpassL.ar(sig);
-		Out.ar(5, sig);
+		Out.ar(~outputChannel, sig);
 	};
 
 	~strings = {
 		var env, in, delay, f1, f2, sug;
-		var out = 0, freq = ~current_pitch_set.choose, amp=1, gate=1, pan=1, freqLag=0;
+		var out = 0, freq = ~current_pitch_set.choose, amp=0.1, gate=1, pan=1, freqLag=0;
 		f1 = freq.lag(freqLag);
 		f2 = freq.lag(freqLag * 0.5);
 		delay = 0.25 / f2;
@@ -288,9 +305,9 @@ s.waitForBoot{
 
 	~input_channels = [
 		0,
-		1,
-		2,
-		3
+		0,
+		0,
+		0
 	];
 
 	// Indices of instruments in instrument sets map to indices of input_channels
@@ -310,8 +327,8 @@ s.waitForBoot{
 		[
 			~wavy_xmission,
 			~time_shifter,
-			~deer_scare,
-			~wavy_xmission
+			~doom,
+			~deer_scare
 		]
 	];
 
