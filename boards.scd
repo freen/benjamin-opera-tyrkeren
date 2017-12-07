@@ -230,7 +230,7 @@ s.waitForBoot{
 			relaxTime: 0.01
 		);
 
-		Out.ar(~outputChannel, sig * env);
+		Out.ar(~outputChannel, sig ! 2 * env);
 	};
 
 	~wavy_xmission = {
@@ -265,13 +265,13 @@ s.waitForBoot{
 		var predelay=0.048, combdecay=3.7, allpassdecay=0.11, revVol=0.21;
 		var buf = Buffer.read(s, "/Users/freen/src/benjamin-opera-tyrkeren/a_rook_is_placed.wav");
 		sig = PlayBuf.ar(2, buf, BufRateScale.kr(buf));
-		compander = 	Compander.ar(sig, sig, MouseX.kr(0.005, 1, 1), 10, 1, 0.01, 0.01);
+		compander = Compander.ar(sig, sig, MouseX.kr(0.005, 1, 1), 10, 1, 0.01, 0.01);
 		z = DelayN.ar(compander, 0.1, predelay);
 		y = Mix.ar(Array.fill(7,{ CombL.ar(z, 0.05, rrand(0.03, 0.05), MouseY.kr(1,20, 1)) }));
 		6.do({ y = AllpassN.ar(y, 0.050, rrand(0.03, 0.05), allpassdecay) });
 		// y = RLPF.ar(y, 200);
 		killerEnv = EnvGen.ar(Env.perc(releaseTime: 9), doneAction: 2);
-		Out.ar(~outputChannel, y * killerEnv ! 2);
+		Out.ar(~outputChannel, y * 0.04 * killerEnv ! 2);
 	};
 
 	~time_shifter = {
