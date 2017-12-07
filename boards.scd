@@ -254,6 +254,19 @@ s.waitForBoot{
 		Out.ar(~outputChannel, sig * env);
 	};
 
+
+	~time_shifter = {
+		var sig;
+		var buf = Buffer.read(s, "/Users/freen/src/benjamin-opera-tyrkeren/a_rook_is_placed.wav");
+		sig = PlayBuf.ar(2, buf, BufRateScale.kr(buf), doneAction: 2);
+		sig = RLPF.ar(sig, 120);
+		sig = PitchShift.ar(sig, pitchRatio: 2, pitchDispersion: 0.3);
+		sig = RHPF.ar(sig, 250);
+		sig = sig * 9;
+		sig = AllpassL.ar(sig);
+		Out.ar(5, sig);
+	};
+
 	~strings = {
 		var env, in, delay, f1, f2, sug;
 		var out = 0, freq = ~current_pitch_set.choose, amp=1, gate=1, pan=1, freqLag=0;
@@ -296,7 +309,7 @@ s.waitForBoot{
 		],
 		[
 			~wavy_xmission,
-			~deer_scare,
+			~time_shifter,
 			~deer_scare,
 			~wavy_xmission
 		]
@@ -404,7 +417,10 @@ s.waitForBoot{
 
 	// SynthDef(\chorus, { arg inbus=2, outbus=6, predelay=0.08, speed=0.05, depth=0.1, ph_diff=0.5;
 	// 	var in, sig, modulators, numDelays = 12;
-	// 	in = SoundIn.ar(inbus, 1) * numDelays.reciprocal;
+	// 	// in = SoundIn.ar(inbus, 1) * numDelays.reciprocal;
+	//
+	// 	var buf = Buffer.read(s, "/Users/freen/src/benjamin-opera-tyrkeren/a_rook_is_placed.wav");
+	// 	var in = PlayBuf.ar(2, buf, BufRateScale.kr(buf), doneAction: 2);
 	//
 	// 	// in = SoundIn.ar(inbus) * numDelays.reciprocal;
 	// 	modulators = Array.fill(numDelays, {arg i;
@@ -415,9 +431,9 @@ s.waitForBoot{
 	// 	Out.ar(outbus, sig ! 2); // output in stereo
 	// }).add;
 	//
-	// {
-	// 	Out.ar(6, SoundIn.ar(2))
-	// }.play(addAction:\addToHead);
+	// // {
+	// // 	Out.ar(6, SoundIn.ar(2))
+	// // }.play(addAction:\addToHead);
 	//
 	// a = Synth(\chorus, addAction:\addToTail);
 	// a.set(\predelay, 0.02);
