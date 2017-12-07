@@ -14,27 +14,47 @@ Server.killAll;
 
 (
 
+// NOTE: Order of instrument_sets must match position of items in instrument sets menu.
+
+// SOUNDCRAFT
+
+~input_channels = [
+	0,
+	1,
+	2,
+	3
+];
+
+// TESTING / BUILT-IN
+
+~input_channels = [
+	0,
+	0,
+	0,
+	0
+];
+
 ~thresholdInitValue = 0.02; // Soundcraft
 ~decayInitValue = 0.33;     // Soundcraft
+~outputChannel = 5;         // Soundcraft
 
 ~thresholdInitValue = 0.12; // Built-in Microph
 ~decayInitValue = 100;      // Built-in Microph
+~outputChannel = 0;         // Built-in Microph
 
-~prayerBellAmp = 0.1;
-~outputChannel = 0;
+~prayerBellAmp = 0.08;
 
 Server.quitAll;
 
 s = Server.local;
 s.options.memSize_(65536 * 8); // 64 MB * 8
 
-
 // SOUNDCRAFT
 
-// s.options.inDevice_("Soundcraft Signature 12 MTK");
-// s.options.outDevice_("Soundcraft Signature 12 MTK");
-// s.options.numInputBusChannels_(14);
-// s.options.numOutputBusChannels_(12);
+s.options.inDevice_("Soundcraft Signature 12 MTK");
+s.options.outDevice_("Soundcraft Signature 12 MTK");
+s.options.numInputBusChannels_(14);
+s.options.numOutputBusChannels_(12);
 
 // TESTING / BUILTIN
 
@@ -46,6 +66,8 @@ s.options.numOutputBusChannels_(2);
 s.reboot;
 
 s.waitForBoot{
+
+	var chorusBus = Bus.audio(s, 2);
 
 	// Order of sets must match order of position in pitch set menu.
 
@@ -303,14 +325,11 @@ s.waitForBoot{
 		Out.ar(~outputChannel, sug ! 2);
 	};
 
-	// NOTE: Order of instrument_sets must match position of items in instrument sets menu.
-
-	~input_channels = [
-		0,
-		0,
-		0,
-		0
-	];
+	~chorus = {
+		var buf = Buffer.read(s, "/Users/freen/src/benjamin-opera-tyrkeren/a_rook_is_placed.wav");
+		var in = PlayBuf.ar(2, buf, BufRateScale.kr(buf), doneAction: 2);
+		Out.ar(~chorusBus, in);
+	};
 
 	// Indices of instruments in instrument sets map to indices of input_channels
 	~instrument_sets = [
@@ -322,7 +341,13 @@ s.waitForBoot{
 		],
 		[
 			~piano,
-			~strings,
+			~piano,
+			~piano,
+			~piano
+		],
+		[
+			~prayer_bell,
+			~piano,
 			~piano,
 			~strings
 		],
@@ -358,7 +383,7 @@ s.waitForBoot{
 			2434 * freqscale
 		) + Dust.ar(0.1), 10000 * freqscale
 		) * LFNoise1.kr(0.5).range(-45, -30).dbamp;
-		input = mallet + (sing_switch.clip(0, 1) * sing) * 0.08;
+		input = mallet + (sing_switch.clip(0, 1) * sing) * ~prayerBellAmp;
 
 		sig = DynKlank.ar(`[
 		[
@@ -434,27 +459,24 @@ s.waitForBoot{
 		Out.ar(out, snd!2);
 	}).add;
 
-	// SynthDef(\chorus, { arg inbus=2, outbus=6, predelay=0.08, speed=0.05, depth=0.1, ph_diff=0.5;
-	// 	var in, sig, modulators, numDelays = 12;
-	// 	// in = SoundIn.ar(inbus, 1) * numDelays.reciprocal;
-	//
-	// 	var buf = Buffer.read(s, "/Users/freen/src/benjamin-opera-tyrkeren/a_rook_is_placed.wav");
-	// 	var in = PlayBuf.ar(2, buf, BufRateScale.kr(buf), doneAction: 2);
-	//
-	// 	// in = SoundIn.ar(inbus) * numDelays.reciprocal;
-	// 	modulators = Array.fill(numDelays, {arg i;
-	// 	LFPar.kr(speed * rrand(0.94, 1.06), ph_diff * i, depth, predelay);});
-	// 	sig = DelayC.ar(in, 0.5, modulators, mul: 12);
-	// 	sig = sig.sum;
-	// 	sig = sig * 2;
-	// 	Out.ar(outbus, sig ! 2); // output in stereo
-	// }).add;
-	//
-	// // {
-	// // 	Out.ar(6, SoundIn.ar(2))
-	// // }.play(addAction:\addToHead);
-	//
-	// a = Synth(\chorus, addAction:\addToTail);
+	SynthDef(\chorus, { arg inbus=2, outbus=6, predelay=0.08, speed=0.05, depth=0.1, ph_diff=0.5;
+		var in, sig, modulators, numDelays = 12;
+		in = SoundIn.ar(inbus, 1) * numDelays.reciprocal;
+		// in = SoundIn.ar(inbus) * numDelays.reciprocal;
+		modulators = Array.fill(numDelays, {arg i;
+		LFPar.kr(speed * rrand(0.94, 1.06), ph_diff * i, depth, predelay);});
+		sig = DelayC.ar(in, 0.5, modulators, mul: 12);
+		sig = sig.sum;
+		sig = sig * 2;
+		Out.ar(outbus, sig ! 2); // output in stereo
+	}).add;
+
+	// {
+		// Out.ar(6, SoundIn.ar(2))
+	// }.play(addAction:\addToHead);
+
+	// a = Synth(\chorus, [\outbus, ~outputChannel], addAction:\addToTail);
+	// a.set(\inbus, ~chorusBus);
 	// a.set(\predelay, 0.02);
 	// a.set(\speed, 0.22);
 	// a.set(\depth, 0.5);
@@ -475,6 +497,7 @@ s.waitForBoot{
 	~pitch_set_menu = PopUpMenu(~w, Rect(10, 10, 90, 20));
 	~pitch_set_menu.items_(
 		[
+			"Muted",
 			"Set 1: Bells",
 			"Set 2: Bells",
 			"Set 3",
@@ -501,6 +524,7 @@ s.waitForBoot{
 		[
 			"Bells, Bells, Bells, Bells",
 			"Piano, Piano, Piano, Piano",
+			"Strings, Bells, Piano, Piano",
 			"Pitchless"
 		]
 	);
