@@ -14,7 +14,9 @@ Server.killAll;
 
 (
 
-~outputChannel = 4;
+~thresholdInitValue = 0.02;
+~decayInitValue = 0.33;
+~outputChannel = 5;
 
 Server.quitAll;
 
@@ -23,7 +25,8 @@ s.options.memSize_(65536 * 8); // 64 MB * 8
 // s.options.inDevice_("DUO-CAPTURE EX 44.1kHz")
 s.options.inDevice_("Soundcraft Signature 12 MTK");
 // s.options.inDevice_("Built-in Microph");
-s.options.outDevice_("Built-in Output");
+s.options.outDevice_("Soundcraft Signature 12 MTK");
+// s.options.outDevice_("Built-in Output");
 s.options.numInputBusChannels_(14);
 s.options.numOutputBusChannels_(12);
 // s.options.numInputBusChannels_(2);
@@ -253,7 +256,7 @@ s.waitForBoot{
 
 	~strings = {
 		var env, in, delay, f1, f2, sug;
-		var out = 0, freq = ~current_pitch_set.choose, amp=0.1, gate=1, pan=1, freqLag=0;
+		var out = 0, freq = ~current_pitch_set.choose, amp=1, gate=1, pan=1, freqLag=0;
 		f1 = freq.lag(freqLag);
 		f2 = freq.lag(freqLag * 0.5);
 		delay = 0.25 / f2;
@@ -265,16 +268,16 @@ s.waitForBoot{
 		sug = Pan2.ar(in, pan, amp) * EnvGen.ar(
 			Env.perc(releaseTime: 4), doneAction: 2
 		);
-		Out.ar(~outputChannel, sug);
+		Out.ar(~outputChannel, sug ! 2);
 	};
 
 	// NOTE: Order of instrument_sets must match position of items in instrument sets menu.
 
 	~input_channels = [
 		0,
-		// 1
-		// 2,
-		// 3
+		1,
+		2,
+		3
 	];
 
 	// Indices of instruments in instrument sets map to indices of input_channels
@@ -287,15 +290,17 @@ s.waitForBoot{
 		],
 		[
 			~piano,
+			// ~strings,
 			~piano,
 			~piano,
 			~piano
+			// ~strings
 		],
 		[
+			~wavy_xmission,
 			~deer_scare,
-			~wavy_xmission,
-			~wavy_xmission,
-			~deer_scare
+			~deer_scare,
+			~wavy_xmission
 		]
 	];
 
@@ -463,7 +468,7 @@ s.waitForBoot{
 		[
 			"Bells, Bells, Bells, Bells",
 			"Piano, Piano, Piano, Piano",
-			"Pitchless, ..."
+			"Pitchless"
 		]
 	);
 	~instrument_set_menu.action = { arg menu;
@@ -486,7 +491,7 @@ s.waitForBoot{
 
 		~threshView = EZSlider(~w, 295@30, "threshold", \amp, action: { |ez|
 			~ampSynths[i].set(\thresh, ez.value);
-		}, initVal: 0.04, labelWidth: 80, numberWidth: 60);
+		}, initVal: ~thresholdInitValue, labelWidth: 80, numberWidth: 60);
 
 		~threshViews = ~threshViews.add(~threshView);
 
@@ -496,7 +501,7 @@ s.waitForBoot{
 
 		~decayView = EZSlider(~w, 295@30, "decay", #[0.1, 100, \exp], action: { |ez|
 			~ampSynths[i].set(\decay, ez.value);
-		}, initVal: 80, labelWidth: 80, numberWidth: 60);
+		}, initVal: ~decayInitValue, labelWidth: 80, numberWidth: 60);
 
 		~decayViews = ~decayViews.add(~decayView);
 
@@ -505,7 +510,7 @@ s.waitForBoot{
 	});
 
 	~ampUpdater = OSCFunc({ |msg|
-		"ampUpdater: %".format(msg).postln;
+		// "ampUpdater: %".format(msg).postln;
 		defer {
 			~ampViews[msg[2]].value = msg[3]
 		}
