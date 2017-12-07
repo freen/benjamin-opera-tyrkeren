@@ -433,7 +433,7 @@ s.waitForBoot{
 
 		DetectSilence.ar(sig, doneAction: i_doneAction);
 
-		fullEnv = EnvGen.ar(Env.asr(releaseTime: 5), doneAction: 2);
+		fullEnv = EnvGen.ar(Env.perc(releaseTime: 5), doneAction: 2);
 
 		Out.ar(outbus, sig * fullEnv);
 	}).add;
