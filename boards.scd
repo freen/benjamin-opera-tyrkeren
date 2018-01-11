@@ -331,9 +331,13 @@ s.waitForBoot{
 		Out.ar(~chorusBus, in);
 	};
 
+	~silent = {
+		SinOsc.ar() * 0 * EnvGen.ar(Env.perc(), doneAction: 2);
+	};
+
 	// Indices of instruments in instrument sets map to indices of input_channels
 	~instrument_sets = [
-		[{}, {}, {}, {}], // "Muted"
+		[~silent, ~silent, ~silent, ~silent], // "Muted"
 		[
 			~prayer_bell,
 			~prayer_bell,
